@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from copy import deepcopy
 DIRECTIONS = [(0, 1), (1, 0), (0, -1), (-1, 0), (-1, 1), (1, -1)] 
 SIZE = 4
@@ -62,7 +63,7 @@ class HexGame:
         self.current_player = 1 - self.current_player
 
     def get_moves(self):
-        mask = np.zeros((self.size, self.size))
+        mask = torch.zeros((self.size, self.size))
         for row in range(self.size):
             for col in range(self.size):
                 mask[row][col] = 0 if self.board[row][col] == -1 else -np.inf

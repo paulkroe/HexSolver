@@ -2,16 +2,16 @@ import random
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import Game.Hex as Hex
+import Game.Hex as hex
 
 print("Testing Hex game")
-wins = {'o': 0, 'x': 0, 'd': 0}
+wins = [0, 0, 0]
 for _ in range(100):
-    game = Hex.HexGame()
+    game = hex.HexGame()
     while True:
         mask = game.get_moves()
+        valid_moves = game.legal_moves(mask)
         # convert mask into a list of valid moves
-        valid_moves = [(row, col) for row in range(game.size) for col in range(game.size) if mask[row][col] == 1]
         move = random.choice(valid_moves)
         game.place_piece(*move)
         winner, path = game.check_winner()
@@ -20,6 +20,7 @@ for _ in range(100):
             assert len(path) >= game.size
             break
         if game.check_draw():
-            wins['d'] += 1
+            wins[2] += 1
             assert len(path) == 0
             break
+        game.take_turn()

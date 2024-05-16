@@ -3,6 +3,11 @@ from graphviz import Digraph
 from queue import Queue
 import random
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import Data.preprocess_data as preprocess_data
+
 C_PUT = 1.0
 
 class Node():
@@ -72,7 +77,9 @@ class MCTS():
         else:
             mask = node.state.get_moves()
             legal_moves = node.state.legal_moves(mask)
-            value, policy = self.net(node.state, mask) # todo think about player here
+            # todo think about player here
+            board = preprocess_data.embed_board(node.state.board, node.state.current_player)
+            value, policy = self.net(board.unsqueeze(dim=0), mask)
             node.update(value)
             node.expand_node(policy, legal_moves)
     
