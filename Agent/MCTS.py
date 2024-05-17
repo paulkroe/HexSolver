@@ -93,6 +93,13 @@ class MCTS():
     def best_move(self):
         return self.root.select_move()
 
+    @property
+    def probabilities(self):
+        probs = [child.n for child in self.root.children]
+        N = sum(probs)
+        probs = [p / N for p in probs]
+        return probs
+    
     def visualize(self):
         dot = Digraph()
         q = Queue()
