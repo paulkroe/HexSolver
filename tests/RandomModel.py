@@ -10,4 +10,4 @@ class RandModel():
     def __init__(self):
         self.size=hex.SIZE
     def __call__(self, x, mask):
-        return torch.rand(1), torch.softmax(torch.rand(self.size, self.size), dim=1)
+        return torch.rand(1), torch.softmax(torch.rand(self.size, self.size)+mask, dim=1)

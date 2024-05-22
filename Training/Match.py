@@ -11,13 +11,12 @@ def match(agent0, agent1, verbose=True):
     is_terminal, winner = game.is_terminal()
     
     while not is_terminal:
-        move, _ = players[player][0]
+        move = players[player].get_move(game)[0]
         game.place_piece(*move)
         if verbose:
             print(game)
-        player = 1-player
         is_terminal, winner = game.is_terminal()
-        
+        game.take_turn()
+        player = 1-player
     return winner
 
-    

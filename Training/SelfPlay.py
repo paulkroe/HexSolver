@@ -43,7 +43,7 @@ class SelfPlay:
         
     def generate_data(self, iterations, fraction, shuffle=True):
         data = []
-        for _ in tqdm(range(iterations)):
+        for _ in tqdm(range(iterations), desc="Games of Self Play"):
             game_result = self.play_game()
             if shuffle:
                 data.extend(random.choices(game_result, k=int(len(game_result)*fraction)))
