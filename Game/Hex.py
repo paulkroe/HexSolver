@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from copy import deepcopy
 DIRECTIONS = [(0, 1), (1, 0), (0, -1), (-1, 0), (-1, 1), (1, -1)] 
-SIZE = 4
+SIZE = 5 # the lower this number is, the bigger the advantage of the first player, thus should be bigger than 4
 
 
 

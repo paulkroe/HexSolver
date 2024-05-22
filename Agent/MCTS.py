@@ -7,8 +7,9 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import Data.preprocess_data as preprocess_data
+import Game.Hex as hex
 
-C_PUT = 1.0
+C_PUT = 2.0
 
 class Node():
     def __init__(self, parent, prior, state, move):
@@ -69,17 +70,17 @@ class MCTS():
     def expand(self, node):
         if node.is_terminal:
             value = 0
-            if node.outcome != self.root.state.current_player:
-                value = -1
-            elif node.outcome == self.root.state.current_player:
-                value = 1
+            if node.outcome != 'd':
+                value=1
             node.update(value)
         else:
             mask = node.state.get_moves()
             legal_moves = node.state.legal_moves(mask)
             # todo think about player here
             board = preprocess_data.embed_board(node.state.board, node.state.current_player)
-            value, policy = self.net(board.unsqueeze(dim=0), mask)
+            value, policy = self.net(board.unsqueeze(dim=0), mask.unsqueeze(dim=0))
+            value = value.unsqueeze(dim=0).item()
+            policy = policy.squeeze(dim=0).detach().numpy()
             node.update(value)
             node.expand_node(policy, legal_moves)
     
@@ -95,10 +96,13 @@ class MCTS():
 
     @property
     def probabilities(self):
-        probs = [child.n for child in self.root.children]
-        N = sum(probs)
-        probs = [p / N for p in probs]
-        return probs
+        probs = [(child.move, child.n) for child in self.root.children]
+        N = sum([n for (_, n) in probs])
+        probs = [(m, n / N) for (m, n) in probs]
+        probabilites = np.zeros((hex.SIZE, hex.SIZE))
+        for (move, prob) in probs:
+            probabilites[move[0]][move[1]] = prob
+        return probabilites
     
     def visualize(self):
         dot = Digraph()
