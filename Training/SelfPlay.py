@@ -31,10 +31,12 @@ class SelfPlay:
                 for i in range(len(history)):
                     board, mask, probabilities, _ = history[i]
                     if winner == 0:
-                        history[i] = (board, mask, probabilities, torch.tensor(1-p, dtype=torch.float32))
-                    else:
+                        history[i] = (board, mask, probabilities, torch.tensor(1-2*p, dtype=torch.float32))
+                    elif winner == 1:
                         assert  winner == 1
-                        history[i] = (board, mask, probabilities, torch.tensor(p, dtype=torch.float32))
+                        history[i] = (board, mask, probabilities, torch.tensor(-1 + 2*p, dtype=torch.float32))
+                    else: # draw
+                        history[i] = (board, mask, probabilities, torch.tensor(0, dtype=torch.float32))
                     p = 1-p
                 return history
             game.take_turn()

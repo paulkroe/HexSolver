@@ -56,13 +56,13 @@ class Agent():
         }
 
 
-    def train(self, data, epochs, lr, batch_size):
+    def train(self, data, epochs, lr, batch_size, verbose=True):
         train_losses, val_losses = [], []
         train_mse_losses, train_ce_losses = [], []
         val_mse_losses, val_ce_losses = [], []
 
         mse_loss_fn = MSELoss()
-        optimizer = Adam(self.model.parameters(), lr=lr)
+        optimizer = Adam(self.model.parameters(), lr=lr, weight_decay=1e-5)
 
         train_loader, val_loader = preprocess_data.get_loaders(data, batch_size=batch_size, shuffle=True)
         
@@ -94,27 +94,28 @@ class Agent():
             train_mse_losses.append(avg_mse_loss / len(train_loader))
             train_ce_losses.append(avg_ce_loss / len(train_loader))
 
-            eval_results = self.eval(val_loader)
-            val_losses.append(eval_results['total_loss'])
-            val_mse_losses.append(eval_results['mse_loss'])
-            val_ce_losses.append(eval_results['ce_loss'])
+            if verbose:
+                eval_results = self.eval(val_loader)
+                val_losses.append(eval_results['total_loss'])
+                val_mse_losses.append(eval_results['mse_loss'])
+                val_ce_losses.append(eval_results['ce_loss'])
 
-            print(f"[{epoch+1}]/[{epochs}]: Training Loss: {train_losses[-1]} - MSE Loss: {train_mse_losses[-1]} - CE Loss: {train_ce_losses[-1]}")
-            print(f"[{epoch+1}]/[{epochs}]: Validation Loss: {val_losses[-1]} - Val MSE Loss: {val_mse_losses[-1]} - Val CE Loss: {val_ce_losses[-1]}")
-
-        # Plotting
-        plt.figure(figsize=(10, 5))
-        plt.plot(train_losses, label="Total Train Loss")
-        plt.plot(train_mse_losses, label="Train MSE Loss")
-        plt.plot(train_ce_losses, label="Train CE Loss")
-        plt.plot(val_losses, label="Total Validation Loss")
-        plt.plot(val_mse_losses, label="Validation MSE Loss")
-        plt.plot(val_ce_losses, label="Validation CE Loss")
-        plt.legend()
-        plt.title("Loss Over Epochs")
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss")
-        plt.show()
+                print(f"[{epoch+1}]/[{epochs}]: Training Loss: {train_losses[-1]} - MSE Loss: {train_mse_losses[-1]} - CE Loss: {train_ce_losses[-1]}")
+                print(f"[{epoch+1}]/[{epochs}]: Validation Loss: {val_losses[-1]} - Val MSE Loss: {val_mse_losses[-1]} - Val CE Loss: {val_ce_losses[-1]}")
+        if verbose:
+            # Plotting
+            plt.figure(figsize=(10, 5))
+            plt.plot(train_losses, label="Total Train Loss")
+            plt.plot(train_mse_losses, label="Train MSE Loss")
+            plt.plot(train_ce_losses, label="Train CE Loss")
+            plt.plot(val_losses, label="Total Validation Loss")
+            plt.plot(val_mse_losses, label="Validation MSE Loss")
+            plt.plot(val_ce_losses, label="Validation CE Loss")
+            plt.legend()
+            plt.title("Loss Over Epochs")
+            plt.xlabel("Epoch")
+            plt.ylabel("Loss")
+            plt.show()
 
 
             
