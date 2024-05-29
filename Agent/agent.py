@@ -25,14 +25,15 @@ class Agent():
         return move, probabilities
     
     def eval(self, val_loader):
+        self.model.eval()
         avg_loss = 0
         avg_mse_loss = 0
         avg_ce_loss = 0
         mse_loss_fn = MSELoss()
         
         with torch.no_grad():
-            for board, _, y_probs, y_wins in val_loader:
-                pred_wins, pred_probs = self.model(board, None)
+            for board, mask, y_probs, y_wins in val_loader:
+                pred_wins, pred_probs = self.model(board, None, add_noise=False)
                 
                 # value loss
                 pred_wins = pred_wins.squeeze(dim=1)
@@ -41,6 +42,7 @@ class Agent():
                 # policy loss
                 y_probs = y_probs.view((-1, hex.SIZE*hex.SIZE))
                 pred_probs = torch.log(pred_probs.view((-1, hex.SIZE*hex.SIZE)))
+                pred_probs[torch.isneginf(pred_probs)] = 0
                 loss_ce = -torch.mean(torch.sum(y_probs * pred_probs, dim=1))
  
                 loss = loss_mse + loss_ce
@@ -56,22 +58,22 @@ class Agent():
         }
 
 
-    def train(self, data, epochs, lr, batch_size, verbose=True):
+    def train(self, data, epochs, lr, batch_size, l2=1e-1, verbose=True):
         train_losses, val_losses = [], []
         train_mse_losses, train_ce_losses = [], []
         val_mse_losses, val_ce_losses = [], []
 
         mse_loss_fn = MSELoss()
-        optimizer = Adam(self.model.parameters(), lr=lr, weight_decay=1e-5)
+        optimizer = Adam(self.model.parameters(), lr=lr, weight_decay=l2)
 
         train_loader, val_loader = preprocess_data.get_loaders(data, batch_size=batch_size, shuffle=True)
         
         for epoch in range(epochs):
             self.model.train()
             avg_loss, avg_mse_loss, avg_ce_loss = 0, 0, 0
-
-            for board, _, y_probs, y_wins in train_loader:
-                pred_wins, pred_probs = self.model(board, None)
+            
+            for board, mask, y_probs, y_wins in train_loader:
+                pred_wins, pred_probs = self.model(board, None, add_noise=False)
                 pred_wins = pred_wins.squeeze(dim=1)
 
                 # value loss
@@ -79,6 +81,7 @@ class Agent():
                 # policy loss
                 y_probs = y_probs.view((-1, hex.SIZE*hex.SIZE))
                 pred_probs = torch.log(pred_probs.view((-1, hex.SIZE*hex.SIZE)))
+                pred_probs[torch.isneginf(pred_probs)] = 0
                 loss_ce = -torch.mean(torch.sum(y_probs * pred_probs, dim=1))
                 
                 loss = loss_mse + loss_ce
@@ -93,7 +96,7 @@ class Agent():
             train_losses.append(avg_loss / len(train_loader))
             train_mse_losses.append(avg_mse_loss / len(train_loader))
             train_ce_losses.append(avg_ce_loss / len(train_loader))
-
+            
             if verbose:
                 eval_results = self.eval(val_loader)
                 val_losses.append(eval_results['total_loss'])

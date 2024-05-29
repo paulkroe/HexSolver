@@ -36,19 +36,23 @@ class SelfPlay:
                         assert  winner == 1
                         history[i] = (board, mask, probabilities, torch.tensor(-1 + 2*p, dtype=torch.float32))
                     else: # draw
+                        winner = 2
                         history[i] = (board, mask, probabilities, torch.tensor(0, dtype=torch.float32))
                     p = 1-p
-                return history
+                return history, winner
             game.take_turn()
         
     def generate_data(self, iterations, fraction, shuffle=True):
         data = []
-        for _ in tqdm(range(iterations), desc="Games of Self Play"):
-            game_result = self.play_game()
+        wins = [0,0,0]
+        for _ in tqdm(range(iterations), desc="Games of Self Play: "):
+            game_result, winner = self.play_game()
+            wins[winner]+=1
             if shuffle:
                 data.extend(random.choices(game_result, k=int(len(game_result)*fraction)))
             else:
                 data.extend(game_result[:len(game_result)*fraction])
+        print(f"Player 0 wins: {wins[0]}, Player 1 wins: {wins[1]}, Draws: {wins[2]}")
         return data 
     
         

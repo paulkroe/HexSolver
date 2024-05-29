@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import Data.preprocess_data as preprocess_data
 import Game.Hex as hex
 
-C_PUT = 2.0
+C_PUT = 1.5
 
 class Node():
     def __init__(self, parent, prior, state, move):
@@ -78,7 +78,7 @@ class MCTS():
             legal_moves = node.state.legal_moves(mask)
             # todo think about player here
             board = preprocess_data.embed_board(node.state.board, node.state.current_player)
-            value, policy = self.net(board.unsqueeze(dim=0), mask.unsqueeze(dim=0))
+            value, policy = self.net(board.unsqueeze(dim=0), mask.unsqueeze(dim=0), add_noise=True)
             value = value.unsqueeze(dim=0).item()
             policy = policy.squeeze(dim=0).detach().numpy()
             node.update(value)

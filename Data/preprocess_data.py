@@ -44,15 +44,15 @@ def get_loaders(data, batch_size, shuffle=True):
         probabilities = [d[2] for d in data]
         wins = [d[3] for d in data]
         
-        train_boards = boards[int(0.8*len(boards)):]
-        train_masks = masks[int(0.8*len(masks)):]
-        train_probabilities = probabilities[int(0.8*len(probabilities)):]
-        train_wins = wins[int(0.8*len(wins)):]
+        train_boards = boards[:int(0.8*len(boards))]
+        train_masks = masks[:int(0.8*len(masks))]
+        train_probabilities = probabilities[:int(0.8*len(probabilities))]
+        train_wins = wins[:int(0.8*len(wins))]
         
-        val_boards = boards[:int(0.8*len(boards))]
-        val_masks = masks[:int(0.8*len(masks))]
-        val_probabilities = probabilities[:int(0.8*len(probabilities))]
-        val_wins = wins[:int(0.8*len(wins))]       
+        val_boards = boards[int(0.8*len(boards)):]
+        val_masks = masks[int(0.8*len(masks)):]
+        val_probabilities = probabilities[int(0.8*len(probabilities)):]
+        val_wins = wins[int(0.8*len(wins)):]       
         
         train_loader = get_loader(train_boards, train_masks, train_probabilities, train_wins, batch_size, shuffle)
         val_loader = get_loader(val_boards, val_masks, val_probabilities, val_wins, batch_size, shuffle)
