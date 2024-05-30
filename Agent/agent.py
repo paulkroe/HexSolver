@@ -11,13 +11,19 @@ from torch.nn import MSELoss
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
-
 import Game.Hex as hex
-
-class Agent():
-    def __init__(self, model):
-        self.model = model
     
+    
+class Agent():
+    def __init__(self, model, name=None, random=False):
+        self.model = model
+        self.elo = 1200
+        self.name = name
+        self.history = [] # to keep track of elo ratings
+        self.random = random
+        self.outcomes = []
+        self.logger = None
+               
     def get_move(self, game, simulations=100):
         tree = mcts.MCTS(game, self.model)
         move = tree.run(simulations)
@@ -58,24 +64,25 @@ class Agent():
         }
 
 
-    def train(self, data, epochs, lr, batch_size, l2=1e-1, verbose=True):
-        train_losses, val_losses = [], []
-        train_mse_losses, train_ce_losses = [], []
-        val_mse_losses, val_ce_losses = [], []
+    def train(self, data, epochs, lr, batch_size, l2=1e-1, verbose=False):
+        if self.random:
+            # If the agent is random, there is no need to train
+            return
+        losses = []
+        mse_losses = []
+        ce_losses = []
 
         mse_loss_fn = MSELoss()
         optimizer = Adam(self.model.parameters(), lr=lr, weight_decay=l2)
 
-        train_loader, val_loader = preprocess_data.get_loaders(data, batch_size=batch_size, shuffle=True)
+        loader = preprocess_data.get_loaders(data, batch_size=batch_size, shuffle=True)
         
         for epoch in range(epochs):
             self.model.train()
             avg_loss, avg_mse_loss, avg_ce_loss = 0, 0, 0
-            
-            for board, mask, y_probs, y_wins in train_loader:
+            for board, mask, y_probs, y_wins in loader:
                 pred_wins, pred_probs = self.model(board, None, add_noise=False)
                 pred_wins = pred_wins.squeeze(dim=1)
-
                 # value loss
                 loss_mse = mse_loss_fn(y_wins, pred_wins)
                 # policy loss
@@ -83,7 +90,6 @@ class Agent():
                 pred_probs = torch.log(pred_probs.view((-1, hex.SIZE*hex.SIZE)))
                 pred_probs[torch.isneginf(pred_probs)] = 0
                 loss_ce = -torch.mean(torch.sum(y_probs * pred_probs, dim=1))
-                
                 loss = loss_mse + loss_ce
                 avg_loss += loss.item()
                 avg_mse_loss += loss_mse.item()
@@ -92,33 +98,20 @@ class Agent():
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
-            train_losses.append(avg_loss / len(train_loader))
-            train_mse_losses.append(avg_mse_loss / len(train_loader))
-            train_ce_losses.append(avg_ce_loss / len(train_loader))
+            if self.logger:
+                self.logger.log({"train/loss": avg_loss / len(loader), "train/mse-loss": avg_mse_loss / len(loader), "train/ce-loss": avg_ce_loss / len(loader)})
+            losses.append(avg_loss / len(loader))
+            mse_losses.append(avg_mse_loss / len(loader))
+            ce_losses.append(avg_ce_loss / len(loader))
             
             if verbose:
-                eval_results = self.eval(val_loader)
-                val_losses.append(eval_results['total_loss'])
-                val_mse_losses.append(eval_results['mse_loss'])
-                val_ce_losses.append(eval_results['ce_loss'])
-
-                print(f"[{epoch+1}]/[{epochs}]: Training Loss: {train_losses[-1]} - MSE Loss: {train_mse_losses[-1]} - CE Loss: {train_ce_losses[-1]}")
-                print(f"[{epoch+1}]/[{epochs}]: Validation Loss: {val_losses[-1]} - Val MSE Loss: {val_mse_losses[-1]} - Val CE Loss: {val_ce_losses[-1]}")
-        if verbose:
-            # Plotting
-            plt.figure(figsize=(10, 5))
-            plt.plot(train_losses, label="Total Train Loss")
-            plt.plot(train_mse_losses, label="Train MSE Loss")
-            plt.plot(train_ce_losses, label="Train CE Loss")
-            plt.plot(val_losses, label="Total Validation Loss")
-            plt.plot(val_mse_losses, label="Validation MSE Loss")
-            plt.plot(val_ce_losses, label="Validation CE Loss")
-            plt.legend()
-            plt.title("Loss Over Epochs")
-            plt.xlabel("Epoch")
-            plt.ylabel("Loss")
-            plt.show()
+                print(f"[{epoch+1}]/[{epochs}]: Training Loss: {losses[-1]} - MSE Loss: {mse_losses[-1]} - CE Loss: {ce_losses[-1]}")
+            
+    def log(self):
+        self.history.append(self.elo)
+        
+    def save(self, path):
+        torch.save(self.model.state_dict(), path)
 
 
             
